@@ -1,0 +1,9 @@
+argparse
+numpy
+matplotlib
+Pillow
+Shapely
+opencv-python
+tqdm
+torch
+openslide-python

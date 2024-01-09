@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument('--save_ending', type=str, default='_mask.png', help='file ending and format of the tissue mask, typically "_mask.png" or ".jpg"')
     parser.add_argument('--show', action='store_true', help='whether to show the plot of the tissue mask')
     parser.add_argument('--show_detailed', action='store_true', help='whether to show the plot of the tissue mask in different stages of algorithm')
+    parser.add_argument('--min_pixel_count', type=int, default=30, help='minimum number of pixels for a polygon to be considered as tissue')
     args = parser.parse_args()
     return args
 
@@ -59,7 +60,7 @@ def polygons_to_mask(polygons, image_shape):
 
 def get_mask(file_name, based_on='grey', contrast=3, grey_threshold=220,
              red_threshold=190, green_threshold=210, blue_threshold=190, min_width=200,
-             resize=True, show=False, show_detailed=False, save=None):
+             resize=True, show=False, show_detailed=False, save=None, min_pixel_count=30):
     wsi = openslide.OpenSlide(file_name)
     # loop over levels to find level with width > min_width
     level = wsi.level_count - 1
@@ -117,7 +118,7 @@ def get_mask(file_name, based_on='grey', contrast=3, grey_threshold=220,
     #plt.imshow(contours_filled_image, cmap='Purples')
     polygons = []
     for contour in contours_filled_mask:
-        if len(contour) >= 50:
+        if len(contour) >= min_pixel_count:
             polygon = Polygon(contour.reshape(-1, 2))
             polygons.append(polygon)
     buffered_polygons = [polygon.buffer(3) for polygon in polygons]
@@ -202,6 +203,7 @@ if __name__ == '__main__':
     save_ending = args.save_ending
     show = args.show
     show_detailed = args.show_detailed
+    min_pixel_count = args.min_pixel_count
 
     print('Tissue Segmentation')
 
@@ -233,7 +235,8 @@ if __name__ == '__main__':
             save_path = None
         get_mask(file, based_on=based_on, contrast=contrast, grey_threshold=grey_threshold,
                  red_threshold=red_threshold, green_threshold=green_threshold, blue_threshold=blue_threshold,
-                 min_width=min_width, resize=resize, show=show, show_detailed=show_detailed, save=save_path)
+                 min_width=min_width, resize=resize, show=show, show_detailed=show_detailed, save=save_path,
+                 min_pixel_count=min_pixel_count)
     end_time = time.time()
     # Calculate elapsed time in seconds
     elapsed_time_sec = end_time - start_time

@@ -59,6 +59,8 @@ python TissueSegmentation.py --wsi_file_dir <path_to_images> [options]
 
 `--contrast`: Contrast increase. Default is 10.
 
+`--min_number_pixel`: Filters out small areas. Default is 30.
+
 `--min_width`: Minimum width of the tissue mask. Default is 400.
 
 `--resize`: Whether to resize the mask to have a width of min_width. Default is True.

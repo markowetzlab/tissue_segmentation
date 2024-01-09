@@ -78,5 +78,8 @@ python TissueSegmentation.py --wsi_file_dir <path_to_images> [options]
 ### Example
 
 ```bash
-python TissueSegmentation.py --wsi_file_dir /path/to/images --contrast 10 --resize --save --show
+# for Cytosponge with non H&E staining
+python TissueSegmentation.py --wsi_file_dir /path/to/images --contrast 10 --resize --save --show --min_pixel_count 50
+# for H&E biopsies
+python TissueSegmentation.py --wsi_file_dir /path/to/images --contrast 10 --show --save_dir /path/to/masks --based_on grey --grey_threshold 230 --min_pixel_count 10
 ```

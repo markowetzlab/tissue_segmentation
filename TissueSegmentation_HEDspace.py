@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
+from skimage import filters
+from skimage.morphology import dilation, disk, square
 import cv2
 import time
 from tqdm import tqdm
@@ -15,7 +17,7 @@ from skimage.color import rgb2hed, hed2rgb
 
 """
 This script reads in a folder of whole slide images or a single whole slide image and returns a tissue mask.
-For H&E with artifacts, I would recommend "--based_on hed" and "--hed h"
+For H&E with pen_markerss, I would recommend "--based_on hed" and "--hed h"
 
 example usage:
 python TissueSegmentation.py --wsi_file_dir /path/to/wsi/files --based_on grey --grey_threshold 210 --red_threshold 200 --green_threshold 190 --blue_threshold 200 --contrast 5 --min_width 400 --resize True --save True --save_dir /path/to/save/directory --save_ending _mask.png --show False --show_detailed False
@@ -41,6 +43,7 @@ def parse_args():
     parser.add_argument('--show', action='store_true', help='whether to show the plot of the tissue mask')
     parser.add_argument('--show_detailed', action='store_true', help='whether to show the plot of the tissue mask in different stages of algorithm')
     parser.add_argument('--min_pixel_count', type=int, default=30, help='minimum number of pixels for a polygon to be considered as tissue')
+    parser.add_argument('--pen_markers', action='store_true', help='whether to expect pen_markers such as pen markers')
     args = parser.parse_args()
     return args
 
@@ -88,7 +91,7 @@ def filter_ihc(ihc, hed='e'):
 def get_mask(file_name, based_on='grey', contrast=3, grey_threshold=220,
              red_threshold=190, green_threshold=210, blue_threshold=190, min_width=200,
              resize=True, show=False, show_detailed=False, save=None, min_pixel_count=30,
-             hed='h'):
+             hed='h', pen_markers=False):
     wsi = openslide.OpenSlide(file_name)
     # loop over levels to find level with width > min_width
     level = wsi.level_count - 1
@@ -105,6 +108,30 @@ def get_mask(file_name, based_on='grey', contrast=3, grey_threshold=220,
         print('resized to: ', wsi_level.size)
     wsi_level_rgb = wsi_level.convert('RGB')
     wsi_level_grey = wsi_level.convert('L')
+    if pen_markers:
+        wsi_level_grey = np.array(wsi_level_grey).astype(np.float32)
+        wsi_level_rgb = np.array(wsi_level_rgb).astype(np.float32)
+
+        triangle_threshold = filters.threshold_triangle(wsi_level_grey.reshape(-1))
+        otsu_threshold = filters.threshold_otsu(wsi_level_grey.reshape(-1))
+        
+        mask = wsi_level_grey < otsu_threshold
+        selem = square(3)
+        dilated_mask = dilation(mask, selem)
+        #dilated_mask = mask
+
+        #wsi_level_grey[wsi_level_grey > triangle_threshold] = 255
+        #wsi_level_grey[wsi_level_grey < otsu_threshold] = 255
+
+        # instead of white (255), make same color as background
+        # we can set the background color to the first pixel of the image
+
+        background_color = wsi_level_grey[0,0]
+        wsi_level_grey[dilated_mask] = background_color
+
+        #wsi_level_rgb[wsi_level_grey == background_color] = background_color
+        #wsi_level_rgb = Image.fromarray(wsi_level_rgb.astype(np.uint8))
+        wsi_level_grey = Image.fromarray(wsi_level_grey.astype(np.uint8))
     if based_on == 'rgb':
         enhancer = ImageEnhance.Contrast(wsi_level_rgb)
     elif based_on == 'grey':
@@ -215,6 +242,7 @@ def get_mask(file_name, based_on='grey', contrast=3, grey_threshold=220,
         except:
             # empty image
             pass
+            
         ax8.set_aspect('equal')
         plt.show()
 
@@ -253,6 +281,7 @@ if __name__ == '__main__':
     show = args.show
     show_detailed = args.show_detailed
     min_pixel_count = args.min_pixel_count
+    pen_markers = args.pen_markers
 
     print('Tissue Segmentation')
 
@@ -285,7 +314,7 @@ if __name__ == '__main__':
         get_mask(file, based_on=based_on, contrast=contrast, grey_threshold=grey_threshold,
                  red_threshold=red_threshold, green_threshold=green_threshold, blue_threshold=blue_threshold,
                  min_width=min_width, resize=resize, show=show, show_detailed=show_detailed, save=save_path,
-                 min_pixel_count=min_pixel_count, hed=hed)
+                 min_pixel_count=min_pixel_count, hed=hed, pen_markers=pen_markers)
     end_time = time.time()
     # Calculate elapsed time in seconds
     elapsed_time_sec = end_time - start_time

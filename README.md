@@ -39,7 +39,7 @@ pip install -r requirements.txt
 
 You can run the script using the following command:
 ```bash
-python TissueSegmentation.py --wsi_file_dir <path_to_images> [options]
+python TissueSegmentationAllInOne.py --wsi_file_dir <path_to_images> [options]
 ```
 
 ### Options

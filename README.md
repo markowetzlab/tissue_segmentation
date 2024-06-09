@@ -95,6 +95,6 @@ python TissueSegmentationAllInOne.py --wsi_dir <path_to_images> [options]
 # If you have a full directory of svs or ndpi files
 python TissueSegmentationAllInOne.py --wsi_dir /path/to/images
 
-# If you just have one specific file that you want to run
-python TissueSegmentationAllInOne.py --wsi_file /path/to/image
+# If you just have one specific file that you want to run with the substraction of the pen marker mask
+python TissueSegmentationAllInOne.py --wsi_file /path/to/image --pen_markers
 ```

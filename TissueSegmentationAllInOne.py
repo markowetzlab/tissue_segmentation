@@ -79,7 +79,7 @@ def get_hetissue(wsi_rgb, hed_contrast):
     null = np.zeros_like(ihc_hed[:, :, 0])
     ihc = hed2rgb(np.stack((ihc_hed[:, :, 1], null, null), axis=-1)) # we are only intrested in 'e' of 'hed'
     contrast_mask = ihc.copy()
-    contrast_mask[contrast_mask==1] = 0
+    contrast_mask[contrast_mask>0.99] = 0
     contrast_mask[contrast_mask!=0] = 1
     contrast_mask = rgb2gray(contrast_mask)
     # Count the number of 1s in the mask
